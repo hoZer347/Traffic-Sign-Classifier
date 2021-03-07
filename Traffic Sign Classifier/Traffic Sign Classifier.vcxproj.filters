@@ -3,4 +3,7 @@
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="C:\Users\NTT\Pictures\Icons\eren_rage.gif" />
+  </ItemGroup>
 </Project>
