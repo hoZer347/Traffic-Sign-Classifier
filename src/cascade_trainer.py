@@ -40,7 +40,7 @@ def parse_csv(location, file):
     image_class = -1
     num_images = 0
     try:
-        csv = open(f"{location}/{file}", "r")
+        csv = open(f"{location}\\{file}", "r")
         csv.readline()
         for row in csv:
             image_data = row.split(";")
@@ -58,6 +58,8 @@ def parse_csv(location, file):
 def generate_info_files():
     print("Generating info files (*.txt)...")
     for folder in os.listdir(IMAGE_LOCATION):
+        if not os.path.isdir(f"{IMAGE_LOCATION}\\{folder}"):
+            continue
         for file in os.listdir(f"{IMAGE_LOCATION}\\{folder}"):
             if file[-4::].lower() == ".csv":
                 output, image_class, num_images = parse_csv(f"{IMAGE_LOCATION}\\{folder}", file)
@@ -74,6 +76,8 @@ def generate_info_files():
 def generate_vec_files():
     print("Generating vec files (*.vec)...")
     for folder in os.listdir(IMAGE_LOCATION):
+        if not os.path.isdir(f"{IMAGE_LOCATION}\\{folder}"):
+            continue
         for file in os.listdir(f"{IMAGE_LOCATION}\\{folder}"):
             if file[-4::].lower() == ".txt":
                 filename = file[:-4]
@@ -88,6 +92,8 @@ def generate_vec_files():
 def display_vec_files():
     print("Displaying generated vec files...")
     for folder in os.listdir(IMAGE_LOCATION):
+        if not os.path.isdir(f"{IMAGE_LOCATION}\\{folder}"):
+            continue
         for file in os.listdir(f"{IMAGE_LOCATION}\\{folder}"):
             if file[-4::].lower() == ".vec":
                 print(f"\tVec file {IMAGE_LOCATION}\\{file}")
@@ -98,6 +104,8 @@ def clean_generated_files():
     extensions_to_clean = [".txt", ".vec"]
     print("Cleaning previously generated files...")
     for folder in os.listdir(IMAGE_LOCATION):
+        if not os.path.isdir(f"{IMAGE_LOCATION}\\{folder}"):
+            continue
         for file in os.listdir(f"{IMAGE_LOCATION}\\{folder}"):
             for extension in extensions_to_clean:
                 potential_file_extension = file[-len(extension)::].lower()
@@ -110,9 +118,26 @@ def clean_generated_files():
 # Note for training: seems to need at least 1 negative image to train
 # The following command worked in the directory of the info, bg, and vec files for folder 00000:
 #       directory_stuff_blah_blah\opencv_traincascade.exe -data _data -vec 0_210.vec -bg _bg.txt -numPos 210 -numNeg 1 -numStages 4 -w 40 -h 40
-def train_haar_cascade(height, width):
+def train_haar_cascade():
     print("Training Haar cascade classifiers...")
-    # TODO: Implement the training (shouldn't take long)
+    for folder in os.listdir(IMAGE_LOCATION):
+        if not os.path.isdir(f"{IMAGE_LOCATION}\\{folder}"):
+            continue
+        print(f"\n{'*'*64}\nNavigating to folder {folder}")
+        vec = None
+        for file in os.listdir(f"{IMAGE_LOCATION}\\{folder}"):
+            if file[-4::].lower() == ".vec":
+                vec = file
+        if not vec:
+            continue
+        filename = vec[:-4]
+        divider_index = filename.find("_")
+        numPos = filename[divider_index+1::]
+        print("Creating output folder '_data'.")
+        subprocess.run(["mkdir", "_data"], cwd=f"{IMAGE_LOCATION}\\{folder}", shell=True)
+        print(f"Training Haar cascade classifier for folder {folder}")
+        subprocess.run([f"{TRAINCASCADE_EXE}", "-data", "_data", "-vec", f"{vec}", "-bg", "../_bg.txt", "-numPos", f"{numPos}", "-numNeg", "1", "-numStages", "3", "-w", "40", "-h", "40"], cwd=f"{IMAGE_LOCATION}\\{folder}", shell=True)
+    print("\n\nFinished training Haar cascade classifiers.")
 
 def display_help():
     print("Valid flags:")
