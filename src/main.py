@@ -21,13 +21,12 @@ CASCADE_0_DIR = "../training/Images/00000/_data/cascade.xml"
 def detectAndDisplay(frame, cascade):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     gray = cv2.equalizeHist(gray)
-    #-- Detect faces
-    faces = cascade.detectMultiScale(gray, 1.4, 3, flags=cv2.CASCADE_SCALE_IMAGE, minSize=(200, 200))
-    print(faces)
-    for (x,y,w,h) in faces:
+    signs = cascade.detectMultiScale(gray, 1.4, 3, flags=cv2.CASCADE_SCALE_IMAGE, minSize=(200, 200))
+    print(signs)
+    for (x,y,w,h) in signs:
         frame = cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
-        faceROI = gray[y:y+h,x:x+w]
-    cv2.imshow('Capture - Face detection', frame)
+        signROI = gray[y:y+h,x:x+w]
+    cv2.imshow("Image", frame)
 
 def main():
     # img = cv2.imread("../stop_sign.jpg")
@@ -38,7 +37,7 @@ def main():
         print("Failed to load cascade classifier")
         return
 
-    img = cv2.imread("./00002_00029.ppm")
+    img = cv2.imread("./test.png")
     detectAndDisplay(img, cascade_0)
 
     # camera = cv2.VideoCapture(0)
