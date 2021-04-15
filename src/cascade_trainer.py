@@ -24,8 +24,8 @@ VEC_OUTPUT_LOCATION = f"{OUTPUT_LOCATION}\\vec"
 # TRAINCASCADE_EXE = os.path.realpath(f"{TRAINING_FOLDER_LOCATION}\\opencv_traincascade.exe - Shortcut.lnk")
 
 # Change these to your opencv_createsamples.exe, opencv_traincascade.exe locations
-CREATESAMPLES_EXE = "N:\\Libraries\\opencv-3.4\\build\\x64\\vc15\\bin\\opencv_createsamples.exe"
-TRAINCASCADE_EXE = "N:\\Libraries\\opencv-3.4\\build\\x64\\vc15\\bin\\opencv_traincascade.exe"
+CREATESAMPLES_EXE = f"{TRAINING_FOLDER_LOCATION}\\..\\resources\\bin\\opencv_createsamples.exe"
+TRAINCASCADE_EXE = f"{TRAINING_FOLDER_LOCATION}\\..\\resources\\bin\\opencv_traincascade.exe"
 
 # Constants below
 VEC_IMAGE_WIDTH = 40
