@@ -2,6 +2,7 @@
 
 import cv2
 import numpy as np
+import os
 
 # - Pre-optimization
 # 	- Unkown optimizations (Do after it works)
@@ -19,25 +20,24 @@ CASCADE_DIR = "../training/Images/00000/_data/cascade.xml"
 def detectAndDisplay(frame, cascade):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     gray = cv2.equalizeHist(gray)
-    signs = cascade.detectMultiScale(gray, 1.4, 4, flags=cv2.CASCADE_SCALE_IMAGE)
+    signs = cascade.detectMultiScale(frame, scaleFactor=1.4, minNeighbors=4, flags=cv2.CASCADE_SCALE_IMAGE)
     print(signs)
     for (x,y,w,h) in signs:
         frame = cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
-        signROI = gray[y:y+h,x:x+w]
+        signROI = frame[y:y+h,x:x+w]
     cv2.imshow("Image", frame)
 
 def main():
-    # img = cv2.imread("../stop_sign.jpg")
-    # cv2.imshow("stop sign", img)
-
     cascade = cv2.CascadeClassifier()
     if not cascade.load(CASCADE_DIR):
         print("Failed to load cascade classifier")
         return
 
-    img = cv2.imread("images.jfif")
+    # Change this img to whatever image name
+    img = cv2.imread("notrucks.png")
     detectAndDisplay(img, cascade)
 
+    #Code for video stream below...
     # camera = cv2.VideoCapture(0)
 
     # cascade_0 = cv2.CascadeClassifier()

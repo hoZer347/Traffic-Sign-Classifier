@@ -1,6 +1,7 @@
 import os
 import sys
 import subprocess
+import shutil
 
 # Run this file from the /src folder for it to work as expected
 
@@ -16,6 +17,7 @@ CURRENT_DIR = os.getcwd()
 TRAINING_FOLDER_LOCATION = os.path.realpath(f"{CURRENT_DIR}\\..\\training")
 IMAGE_LOCATION = f"{TRAINING_FOLDER_LOCATION}\\Images"
 OUTPUT_LOCATION = f"{TRAINING_FOLDER_LOCATION}\\_output"
+FINAL_CASCADE_DIRECTORY = f"{CURRENT_DIR}\\..\\cascades"
 
 # TODO: Figure out why os.path.realpath does not solve the symbolic link (I want this for finding the exe's via relative paths)
 # CREATESAMPLES_EXE = os.path.realpath(f"{TRAINING_FOLDER_LOCATION}\\opencv_createsamples.exe - Shortcut.lnk")
@@ -170,14 +172,26 @@ def train_haar_cascades():
             continue
         filename = vec[:-4]
         divider_index = filename.find("_")
-        # capping the number of positive images at 1000 positive images for the sake of saving time
-        numPos = min(int(int(filename[divider_index+1::])*0.9), 1000)  # x0.9 for god knows what reason
+        # capping the number of positive images at 500 positive images for the sake of saving time
+        numPos = min(int(int(filename[divider_index+1::])*0.9), 500)  # x0.9 for god knows what reason
         numNeg = min(int(numPos)//2, 4179)
         print("Creating output folder '_data'.")
         subprocess.run(["mkdir", "_data"], cwd=f"{IMAGE_LOCATION}\\{folder}", shell=True)
         print(f"Training Haar cascade classifier for folder {folder}")
         subprocess.run([f"{TRAINCASCADE_EXE}", "-data", "_data", "-vec", f"{vec}", "-bg", "../_bg.txt", "-numPos", f"{numPos}", "-numNeg", f"{numNeg}", "-numStages", "10", "-w", "40", "-h", "40"], cwd=f"{IMAGE_LOCATION}\\{folder}", shell=True)
     print("\n\nFinished training Haar cascade classifiers.")
+
+def move_cascades():
+    for folder in os.listdir(IMAGE_LOCATION):
+        if folder == "negative":
+            continue
+        if not os.path.isdir(f"{IMAGE_LOCATION}\\{folder}"):
+            continue
+        if not os.path.isdir(f"{IMAGE_LOCATION}\\{folder}\\_data"):
+            continue
+        shutil.copytree(f"{IMAGE_LOCATION}\\{folder}\\_data", f"{FINAL_CASCADE_DIRECTORY}\\{folder}")
+        print(f"Moving cascades of {IMAGE_LOCATION}\\{folder}\\_data to {FINAL_CASCADE_DIRECTORY}\\{folder}")
+    print("\n\nFinished moving cascades.")
 
 def display_help():
     print("Valid flags:")
@@ -191,6 +205,7 @@ VALID_FLAGS = {
     "--generate-bg": generate_bg,
     "--train": train_haar_cascade,
     "--train-all": train_haar_cascades, 
+    "--move-cascades": move_cascades,
     "--help": display_help
 }
 
