@@ -16,8 +16,6 @@ CURRENT_DIR = os.getcwd()
 TRAINING_FOLDER_LOCATION = os.path.realpath(f"{CURRENT_DIR}\\..\\training")
 IMAGE_LOCATION = f"{TRAINING_FOLDER_LOCATION}\\Images"
 OUTPUT_LOCATION = f"{TRAINING_FOLDER_LOCATION}\\_output"
-INFO_OUTPUT_LOCATION = f"{OUTPUT_LOCATION}\\info"
-VEC_OUTPUT_LOCATION = f"{OUTPUT_LOCATION}\\vec"
 
 # TODO: Figure out why os.path.realpath does not solve the symbolic link (I want this for finding the exe's via relative paths)
 # CREATESAMPLES_EXE = os.path.realpath(f"{TRAINING_FOLDER_LOCATION}\\opencv_createsamples.exe - Shortcut.lnk")
@@ -58,6 +56,8 @@ def parse_csv(location, file):
 def generate_info_files():
     print("Generating info files (*.txt)...")
     for folder in os.listdir(IMAGE_LOCATION):
+        if folder == "negative":
+            continue
         if not os.path.isdir(f"{IMAGE_LOCATION}\\{folder}"):
             continue
         for file in os.listdir(f"{IMAGE_LOCATION}\\{folder}"):
@@ -76,6 +76,8 @@ def generate_info_files():
 def generate_vec_files():
     print("Generating vec files (*.vec)...")
     for folder in os.listdir(IMAGE_LOCATION):
+        if folder == "negative":
+            continue
         if not os.path.isdir(f"{IMAGE_LOCATION}\\{folder}"):
             continue
         for file in os.listdir(f"{IMAGE_LOCATION}\\{folder}"):
@@ -92,6 +94,8 @@ def generate_vec_files():
 def display_vec_files():
     print("Displaying generated vec files...")
     for folder in os.listdir(IMAGE_LOCATION):
+        if folder == "negative":
+            continue
         if not os.path.isdir(f"{IMAGE_LOCATION}\\{folder}"):
             continue
         for file in os.listdir(f"{IMAGE_LOCATION}\\{folder}"):
@@ -99,6 +103,17 @@ def display_vec_files():
                 print(f"\tVec file {IMAGE_LOCATION}\\{file}")
     print("Finished displaying vec files.")
 
+def generate_bg():
+    bg = open(f"{IMAGE_LOCATION}\\_bg.txt", "w+")
+    folder = f"{IMAGE_LOCATION}\\negative"
+    print(f"\n{'*'*64}\nNavigating to folder {folder}")
+    num_negatives = 0
+    for file in os.listdir(folder):
+        if "false" not in file:
+            bg.write(f"..\\negative\\{file}\n")
+            num_negatives+=1
+    bg.close()
+    print(f"Negative file _bg.txt generated (with a total of {num_negatives} negative files).")
 
 def clean_generated_files():
     extensions_to_clean = [".txt", ".vec"]
@@ -114,13 +129,36 @@ def clean_generated_files():
                     print(f"\tDeleted file {IMAGE_LOCATION}\\{file}")
     print("Cleaning finished successfully.")
 
+# Trains a singular haar cascade
+def train_haar_cascade():
+    print("Training a singular Haar cascade classifier...")
+    folder = f"{IMAGE_LOCATION}\\00000"
+    print(f"\n{'*'*64}\nNavigating to folder {folder}")
+    vec = None
+    for file in os.listdir(folder):
+        if file[-4::].lower() == ".vec":
+            vec = file
+    if not vec:
+        print("Failed to train the Haar cascade.")
+        return
+    filename = vec[:-4]
+    divider_index = filename.find("_")
+    numPos = int(int(filename[divider_index+1::])*0.9)  # x0.9 for god knows what reason
+    numNeg = min(int(numPos), 4179)                     # we have 4179 total negative images, but i'm trying to cut down the amount we use so we don't compute for 20 years
+    print("Creating output folder '_data'.")
+    subprocess.run(["mkdir", "_data"], cwd=f"{folder}", shell=True)
+    print(f"Training Haar cascade classifier for folder {folder}")
+    subprocess.run([f"{TRAINCASCADE_EXE}", "-data", "_data", "-vec", f"{vec}", "-bg", "../_bg.txt", "-numPos", f"{numPos}", "-numNeg", f"{numNeg}", "-numStages", "10", "-w", "40", "-h", "40"], cwd=f"{folder}", shell=True)
+    print("\n\nFinished training Haar cascade classifier.")
 
 # Note for training: seems to need at least 1 negative image to train
 # The following command worked in the directory of the info, bg, and vec files for folder 00000:
 #       directory_stuff_blah_blah\opencv_traincascade.exe -data _data -vec 0_210.vec -bg _bg.txt -numPos 210 -numNeg 1 -numStages 4 -w 40 -h 40
-def train_haar_cascade():
+def train_haar_cascades():
     print("Training Haar cascade classifiers...")
     for folder in os.listdir(IMAGE_LOCATION):
+        if folder == "negative":
+            continue
         if not os.path.isdir(f"{IMAGE_LOCATION}\\{folder}"):
             continue
         print(f"\n{'*'*64}\nNavigating to folder {folder}")
@@ -132,11 +170,12 @@ def train_haar_cascade():
             continue
         filename = vec[:-4]
         divider_index = filename.find("_")
-        numPos = filename[divider_index+1::]
+        numPos = int(int(filename[divider_index+1::])*0.9)  # x0.9 for god knows what reason
+        numNeg = min(int(numPos)//2, 4179)
         print("Creating output folder '_data'.")
         subprocess.run(["mkdir", "_data"], cwd=f"{IMAGE_LOCATION}\\{folder}", shell=True)
         print(f"Training Haar cascade classifier for folder {folder}")
-        subprocess.run([f"{TRAINCASCADE_EXE}", "-data", "_data", "-vec", f"{vec}", "-bg", "../_bg.txt", "-numPos", f"{numPos}", "-numNeg", "1", "-numStages", "3", "-w", "40", "-h", "40"], cwd=f"{IMAGE_LOCATION}\\{folder}", shell=True)
+        subprocess.run([f"{TRAINCASCADE_EXE}", "-data", "_data", "-vec", f"{vec}", "-bg", "../_bg.txt", "-numPos", f"{numPos}", "-numNeg", f"{numNeg}", "-numStages", "10", "-w", "40", "-h", "40"], cwd=f"{IMAGE_LOCATION}\\{folder}", shell=True)
     print("\n\nFinished training Haar cascade classifiers.")
 
 def display_help():
@@ -148,7 +187,9 @@ VALID_FLAGS = {
     "--clean": clean_generated_files, 
     "--generate-info": generate_info_files, 
     "--generate-vec": generate_vec_files, 
-    "--train": train_haar_cascade, 
+    "--generate-bg": generate_bg,
+    "--train": train_haar_cascade,
+    "--train-all": train_haar_cascades, 
     "--help": display_help
 }
 
@@ -165,3 +206,6 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv[1:])
+
+
+

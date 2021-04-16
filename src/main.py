@@ -14,14 +14,12 @@ import numpy as np
 # - Recognition
 # - Output\
 
-CASCADE_0_DIR = "../training/Images/00000/_data/cascade.xml"
-# CASCADE_0_DIR = "./cascade.xml"
-# CASCADE_0_DIR = "test.xml"
+CASCADE_DIR = "../training/Images/00001/_data/cascade.xml"
 
 def detectAndDisplay(frame, cascade):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     gray = cv2.equalizeHist(gray)
-    signs = cascade.detectMultiScale(gray, 1.4, 3, flags=cv2.CASCADE_SCALE_IMAGE, minSize=(200, 200))
+    signs = cascade.detectMultiScale(gray, 1.4, 4, flags=cv2.CASCADE_SCALE_IMAGE)
     print(signs)
     for (x,y,w,h) in signs:
         frame = cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
@@ -32,13 +30,13 @@ def main():
     # img = cv2.imread("../stop_sign.jpg")
     # cv2.imshow("stop sign", img)
 
-    cascade_0 = cv2.CascadeClassifier()
-    if not cascade_0.load(CASCADE_0_DIR):
+    cascade = cv2.CascadeClassifier()
+    if not cascade.load(CASCADE_DIR):
         print("Failed to load cascade classifier")
         return
 
-    img = cv2.imread("./test.png")
-    detectAndDisplay(img, cascade_0)
+    img = cv2.imread("test.png")
+    detectAndDisplay(img, cascade)
 
     # camera = cv2.VideoCapture(0)
 
