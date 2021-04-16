@@ -15,28 +15,45 @@ import os
 # - Recognition
 # - Output\
 
-CASCADE_DIR = "../training/Images/00000/_data/cascade.xml"
+CASCADE_FOLDER = "../cascades"
 
-def detectAndDisplay(frame, cascade):
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    gray = cv2.equalizeHist(gray)
-    signs = cascade.detectMultiScale(frame, scaleFactor=1.4, minNeighbors=4, flags=cv2.CASCADE_SCALE_IMAGE)
-    print(signs)
-    for (x,y,w,h) in signs:
-        frame = cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
-        signROI = frame[y:y+h,x:x+w]
-    cv2.imshow("Image", frame)
+def loadCascades():
+    cascades = dict()
+    for folder in os.listdir(CASCADE_FOLDER):
+        if not "cascade.xml" in os.listdir(f"{CASCADE_FOLDER}\\{folder}"):
+            continue
+        cascade = cv2.CascadeClassifier()
+        if not cascade.load(f"{CASCADE_FOLDER}\\{folder}\\cascade.xml"):
+            print("Failed to load cascade classifier")
+            continue
+        cascades[folder] = cascade
+    return cascades
+
+def applyHaarCascade(frame, cascade):
+    # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # gray = cv2.equalizeHist(gray)
+    signs = cascade.detectMultiScale(frame, scaleFactor=1.01, minNeighbors=400, flags=cv2.CASCADE_SCALE_IMAGE)
+    return signs
+    
 
 def main():
-    cascade = cv2.CascadeClassifier()
-    if not cascade.load(CASCADE_DIR):
-        print("Failed to load cascade classifier")
-        return
+    cascades = loadCascades()
 
     # Change this img to whatever image name
     img = cv2.imread("notrucks.png")
-    detectAndDisplay(img, cascade)
 
+    signs = []
+    for cascade in cascades:
+        new_signs = applyHaarCascade(img, cascades[cascade])
+        for sign in new_signs:
+            signs.append(sign)
+
+
+    for (x,y,w,h) in signs:
+        img = cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
+        signROI = img[y:y+h,x:x+w]
+    
+    cv2.imshow("img", img)
     #Code for video stream below...
     # camera = cv2.VideoCapture(0)
 
