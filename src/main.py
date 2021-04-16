@@ -14,7 +14,7 @@ import numpy as np
 # - Recognition
 # - Output\
 
-CASCADE_DIR = "../training/Images/00001/_data/cascade.xml"
+CASCADE_DIR = "../training/Images/00000/_data/cascade.xml"
 
 def detectAndDisplay(frame, cascade):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -35,7 +35,7 @@ def main():
         print("Failed to load cascade classifier")
         return
 
-    img = cv2.imread("test.png")
+    img = cv2.imread("images.jfif")
     detectAndDisplay(img, cascade)
 
     # camera = cv2.VideoCapture(0)

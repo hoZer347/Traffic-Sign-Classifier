@@ -170,7 +170,8 @@ def train_haar_cascades():
             continue
         filename = vec[:-4]
         divider_index = filename.find("_")
-        numPos = int(int(filename[divider_index+1::])*0.9)  # x0.9 for god knows what reason
+        # capping the number of positive images at 1000 positive images for the sake of saving time
+        numPos = min(int(int(filename[divider_index+1::])*0.9), 1000)  # x0.9 for god knows what reason
         numNeg = min(int(numPos)//2, 4179)
         print("Creating output folder '_data'.")
         subprocess.run(["mkdir", "_data"], cwd=f"{IMAGE_LOCATION}\\{folder}", shell=True)
@@ -206,6 +207,4 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv[1:])
-
-
 
