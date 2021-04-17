@@ -3,6 +3,8 @@ import sys
 import subprocess
 import shutil
 
+# NOTE: This is a utility to automate the training process for training Haar cascade classifiers
+# This is not part of the traffic sign detection program, just a utility
 # Run this file from the /src folder for it to work as expected
 
 # TODO: Implement multi-threading/async?
@@ -55,6 +57,24 @@ def parse_csv(location, file):
         print(image_class)
     return (output, image_class, num_images)
 
+def merge_info_files():
+    print("Merging info files...")
+    info = open(f"{IMAGE_LOCATION}\\info.txt", "w+")
+    for folder in os.listdir(IMAGE_LOCATION):
+        if folder == "negative":
+            continue
+        if not os.path.isdir(f"{IMAGE_LOCATION}\\{folder}"):
+            continue
+        print(f"\n{'*'*64}\nNavigating to {IMAGE_LOCATION}\\{folder}")
+        for file in os.listdir(f"{IMAGE_LOCATION}\\{folder}"):
+            if file[-4::].lower() == ".txt":
+                txt = open(f"{IMAGE_LOCATION}\\{folder}\\{file}", "r")
+                for line in txt:
+                    info.write(f"{folder}\\{line}")
+                txt.close()
+    info.close()
+    print("Finished merging info files.")
+
 def generate_info_files():
     print("Generating info files (*.txt)...")
     for folder in os.listdir(IMAGE_LOCATION):
@@ -74,6 +94,17 @@ def generate_info_files():
                     print(f"An error has occurred while writing data to the info file \"{OUTPUT_LOCATION}/{image_class}_{num_images}.txt\"... Skipping this file.")
                     continue
     print("Finished generating info files.")
+
+def generate_sum_vec_file():
+    print("Generating the total sum vec file...")
+    for element in os.listdir(IMAGE_LOCATION):
+        if element == "info.txt":
+            f = open(f"{IMAGE_LOCATION}\\info.txt", "r")
+            num_images = len(f.readlines())
+            f.close()
+            subprocess.run([f"{CREATESAMPLES_EXE}", "-info", "info.txt", "-num", f"{num_images}", "-w", f"{VEC_IMAGE_WIDTH}", "-h", f"{VEC_IMAGE_HEIGHT}", "-vec", "total.vec"], shell=True, cwd=os.path.realpath(f"{IMAGE_LOCATION}"))
+    print("Finished generating vec file.")
+
 
 def generate_vec_files():
     print("Generating vec files (*.vec)...")
@@ -105,6 +136,18 @@ def display_vec_files():
                 print(f"\tVec file {IMAGE_LOCATION}\\{file}")
     print("Finished displaying vec files.")
 
+def generate_sum_bg():
+    bg = open(f"{IMAGE_LOCATION}\\_sum_bg.txt", "w+")
+    folder = f"{IMAGE_LOCATION}\\negative"
+    print(f"\n{'*'*64}\nNavigating to folder {folder}")
+    num_negatives = 0
+    for file in os.listdir(folder):
+        if "false" not in file:
+            bg.write(f"negative\\{file}\n")
+            num_negatives+=1
+    bg.close()
+    print(f"Negative file _bg.txt generated for sum (with a total of {num_negatives} negative files).")
+
 def generate_bg():
     bg = open(f"{IMAGE_LOCATION}\\_bg.txt", "w+")
     folder = f"{IMAGE_LOCATION}\\negative"
@@ -132,25 +175,18 @@ def clean_generated_files():
     print("Cleaning finished successfully.")
 
 # Trains a singular haar cascade
-def train_haar_cascade():
-    print("Training a singular Haar cascade classifier...")
-    folder = f"{IMAGE_LOCATION}\\00000"
+def train_sum_haar_cascade():
+    print("Trainingthe sum Haar cascade classifier...")
+    folder = f"{IMAGE_LOCATION}"
     print(f"\n{'*'*64}\nNavigating to folder {folder}")
-    vec = None
-    for file in os.listdir(folder):
-        if file[-4::].lower() == ".vec":
-            vec = file
-    if not vec:
-        print("Failed to train the Haar cascade.")
-        return
-    filename = vec[:-4]
-    divider_index = filename.find("_")
-    numPos = int(int(filename[divider_index+1::])*0.9)  # x0.9 for god knows what reason
+    f = open(f"{IMAGE_LOCATION}\\info.txt", "r")
+    numPos = int(len(f.readlines()))*0.9
+    f.close()
     numNeg = min(int(numPos), 4179)                     # we have 4179 total negative images, but i'm trying to cut down the amount we use so we don't compute for 20 years
     print("Creating output folder '_data'.")
     subprocess.run(["mkdir", "_data"], cwd=f"{folder}", shell=True)
     print(f"Training Haar cascade classifier for folder {folder}")
-    subprocess.run([f"{TRAINCASCADE_EXE}", "-data", "_data", "-vec", f"{vec}", "-bg", "../_bg.txt", "-numPos", f"{numPos}", "-numNeg", f"{numNeg}", "-numStages", "10", "-w", "40", "-h", "40"], cwd=f"{folder}", shell=True)
+    subprocess.run([f"{TRAINCASCADE_EXE}", "-data", "_data", "-vec", "total.vec", "-bg", "_sum_bg.txt", "-numPos", f"{numPos}", "-numNeg", f"{numNeg}", "-numStages", "1", "-w", "40", "-h", "40"], cwd=f"{IMAGE_LOCATION}", shell=True)
     print("\n\nFinished training Haar cascade classifier.")
 
 # Note for training: seems to need at least 1 negative image to train
@@ -203,7 +239,10 @@ VALID_FLAGS = {
     "--generate-info": generate_info_files, 
     "--generate-vec": generate_vec_files, 
     "--generate-bg": generate_bg,
-    "--train": train_haar_cascade,
+    "--merge-info": merge_info_files,
+    "--generate-sum-vec": generate_sum_vec_file,
+    "--generate-sum-bg": generate_sum_bg,
+    "--train-sum": train_sum_haar_cascade,
     "--train-all": train_haar_cascades, 
     "--move-cascades": move_cascades,
     "--help": display_help
